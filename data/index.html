@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banc de Test Optronique</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <h1>SHUTTER<span>TEST</span></h1>
+            <span id="format-badge" class="badge format">DÉTECTION...</span>
+        </div>
+        <div class="status-bar">
+            <span id="status-badge" class="badge status">DECONNECTÉ</span>
+            <button id="btn-arm" onclick="armEngine()">RÉARMER</button>
+            <button id="btn-sim" onclick="triggerSimulation()">TEST SIMU</button>
+        </div>
+    </header>
+
+    <main class="dashboard">
+        <!-- CARTE PRINCIPALE : RESULTAT DU TIR -->
+        <section class="card main-result">
+            <h2>Dernière Mesure</h2>
+            <div class="speed-display">
+                <span id="speed-value">--</span>
+                <span id="speed-unit">s</span>
+            </div>
+            <div class="ev-display">
+                <span id="ev-value">0.00</span>
+                <span class="ev-unit">EV</span>
+            </div>
+            <div class="shutter-type-tag">
+                Type : <strong id="shutter-type">--</strong>
+            </div>
+        </section>
+
+        <!-- CARTE DÉTAILS & RIDEAUX -->
+        <section class="card curtain-details">
+            <h2>Analyse Géométrique & Rideaux</h2>
+            <div class="metrics-grid">
+                <div class="metric-item">
+                    <span class="label">Rideau 1 (Ouverture)</span>
+                    <span class="value" id="c1-travel">-- ms</span>
+                </div>
+                <div class="metric-item">
+                    <span class="label">Rideau 2 (Fermeture)</span>
+                    <span class="value" id="c2-travel">-- ms</span>
+                </div>
+                <div class="metric-item">
+                    <span class="label">Défaut Angle R1 (Skew)</span>
+                    <span class="value" id="c1-skew">-- ms</span>
+                </div>
+                <div class="metric-item">
+                    <span class="label">Défaut Angle R2 (Skew)</span>
+                    <span class="value" id="c2-skew">-- ms</span>
+                </div>
+                <div class="metric-item full-width">
+                    <span class="label">Divergence Fente (Capping / Trapèze)</span>
+                    <span class="value" id="gap-div">-- %</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- CARTE CHRONOGRAMME / TIMINGS CAPTEURS -->
+        <section class="card timeline-card">
+            <h2>Chronogramme des 5 Capteurs (µs)</h2>
+            <div id="sensor-timeline" class="timeline-container">
+                <!-- Les barres graphiques des capteurs seront générées ici en JS -->
+            </div>
+        </section>
+
+        <!-- HISTORIQUE DES TIRS -->
+        <section class="card history-card">
+            <h2>Historique de Session</h2>
+            <table id="history-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Type</th>
+                        <th>Vitesse</th>
+                        <th>Écart EV</th>
+                        <th>Skew R1</th>
+                        <th>Divergence</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Lignes ajoutées dynamiquement -->
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

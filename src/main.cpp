@@ -46,7 +46,7 @@ void loop() {
     if (captureEngine.getState() == CAPTURE_COMPLETE) {
         Serial.println("[Capture] Déclenchement détecté. Calcul des résultats...");
         
-        ShutterMeasurement meas = captureEngine.getMeasurement();
+        ShutterMeasurement meas = captureEngine.getMeasurement(lastFormat);
         
         // Log console pour débug
         Serial.printf(" Type : %d | Vitesse : 1/%.1fs | Écart EV : %.2f EV\n", 
@@ -58,6 +58,6 @@ void loop() {
         webServer.broadcastMeasurement(meas);
 
         // Réarmement automatique du moteur d'acquisition pour le prochain tir
-        captureEngine.arm();
+        captureEngine.rearmSameTarget();
     }
 }

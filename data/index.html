@@ -3,20 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ChronoShutter Multi-Capteurs - Test & Calibration</title>
+    <title>ShutterLAB - Banc de calibration d'obturateur</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container" id="main-ui">
         <header>
             <div class="logo">
-                <h1>CHRONO<span>SHUTTER</span></h1>
+                <h1>Shutter<span>LAB</span></h1>
                 <span id="format-badge" class="badge format">DÉTECTION...</span>
             </div>
             <div class="status-bar">
                 <span id="status-badge" class="badge status">DECONNECTÉ</span>
                 <button id="btn-arm" onclick="armEngine()">RÉARMER</button>
-                <button id="btn-sim" class="secondary" onclick="triggerSimulation()">⚡ TEST SIMU</button>            </div>
+                <button id="btn-sim" class="secondary" onclick="triggerSimulation()">⚡ TEST SIMU</button>
+            </div>
         </header>
 
         <!-- CARTE CONTROLES & SELECTION VITESSE CIBLE -->
@@ -66,6 +67,39 @@
             </div>
         </div>
 
+        <!-- FICHE D'INTERVENTION BOÎTIER (FORMULAIRE INTÉGRÉ) -->
+        <div class="card">
+            <div class="card-header">
+                <h2>Fiche d'intervention Boîtier</h2>
+            </div>
+            <div class="form-grid">
+                <div class="control-group">
+                    <label for="meta-model">Marque & Modèle</label>
+                    <input type="text" id="meta-model" placeholder="ex: Nikon F3, Olympus OM-1..." onchange="updateSummaryTable()">
+                </div>
+                <div class="control-group">
+                    <label for="meta-serial">N° de Série</label>
+                    <input type="text" id="meta-serial" placeholder="ex: 723411" onchange="updateSummaryTable()">
+                </div>
+                <div class="control-group">
+                    <label for="meta-tech">Technicien / Opérateur</label>
+                    <input type="text" id="meta-tech" placeholder="ex: Alexandre" onchange="updateSummaryTable()">
+                </div>
+                <div class="control-group">
+                    <label for="meta-tolerance">Tolérance Cible</label>
+                    <select id="meta-tolerance" onchange="updateSummaryTable()">
+                        <option value="0.33">± 1/3 EV (Strict)</option>
+                        <option value="0.50" selected>± 1/2 EV (Standard)</option>
+                        <option value="0.66">± 2/3 EV (Tolérant)</option>
+                    </select>
+                </div>
+                <div class="control-group full-width">
+                    <label for="meta-notes">Observations / Notes d'atelier</label>
+                    <input type="text" id="meta-notes" placeholder="ex: Graisses d'armement d'origine, vitesses lentes OK." onchange="updateSummaryTable()">
+                </div>
+            </div>
+        </div>
+
         <!-- CARTE HISTORIQUE, MOYENNES & DISPERSION (3 MESURES) -->
         <div class="card">
             <div class="card-header">
@@ -86,7 +120,9 @@
                         <th>Moyenne</th>
                         <th>Écart EV</th>
                         <th>Dispersion</th>
-                        <th>Skew R1 / Diverg.</th>
+                        <th>Skew R1</th>
+                        <th>Skew R2</th>
+                        <th>Diverg.</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -96,31 +132,36 @@
         </div>
     </div>
 
- <!-- ZONE D'IMPRESSION EXCLUSIVE (RAPPORT COMPLET & ÉTIQUETTE DE DECOUPE) -->
+    <!-- CANVAS SCHÉMA GÉOMÉTRIQUE (Caché sur l'IHM web, affiché dans le rapport) -->
+    <canvas id="geometryCanvas" width="400" height="250" style="display:none;"></canvas>
+
+    <!-- ZONE D'IMPRESSION EXCLUSIVE RAPPORT PDF -->
     <div id="printable-area">
         <div class="print-header">
             <div class="print-header-main">
-                <h1>Rapport d'Expertise & Calibration Obturateur</h1>
-                <p>Banc d'Analyse Optronique Multi-Capteurs — <strong>ChronoShutter</strong></p>
+                <h1>RAPPORT DE CALIBRATION</h1>
+                <p>ShutterLAB - Analyse Optronique Multi-Capteurs</p>
             </div>
             <div class="print-header-meta">
-                <p><strong>Date :</strong> <span id="print-date"></span></p>
-                <p><strong>Format Boîtier :</strong> <span id="print-format"></span></p>
-                <p><strong>Type Obturateur :</strong> <span id="print-shutter-type">--</span></p>
+                <p><strong>Date :</strong> <span id="print-date">--</span></p>
+                <p><strong>Appareil :</strong> <span id="print-camera-info">--</span></p>
+                <p><strong>Technicien :</strong> <span id="print-tech-info">--</span></p>
             </div>
         </div>
 
-        <!-- RAPPEL VISUEL : OSCILLOSCOPE IMPRIMÉ -->
-        <div class="print-section">
-            <h3>Capture Oscilloscope (Dernier Tir à la Consigne)</h3>
-            <div class="print-canvas-wrapper">
-                <img id="print-oscilloscope-img" src="" alt="Graphique Oscilloscope" />
+        <!-- DIAGNOSTIC GÉOMÉTRIQUE -->
+        <div class="print-section print-grid-1col">
+            <div>
+                <h3>Géométrie du Plan Focal (Rideaux)</h3>
+                <div class="print-canvas-wrapper">
+                    <img id="print-geometry-img" src="" alt="Géométrie Rideaux" />
+                </div>
             </div>
         </div>
 
-        <!-- TABLEAU COMPLET : LA TOTALE -->
+        <!-- TABLEAU EXHAUSTIF DES MESURES -->
         <div class="print-section">
-            <h3>Synthèse Détaillée des Mesures</h3>
+            <h3>Synthèse des Mesures & Conformité</h3>
             <table class="print-table">
                 <thead>
                     <tr>
@@ -128,31 +169,35 @@
                         <th>T1</th>
                         <th>T2</th>
                         <th>T3</th>
-                        <th>Moy.</th>
+                        <th>Moyenne</th>
                         <th>Écart EV</th>
-                        <th>Disp.</th>
-                        <th>Parallélisme (Angle)</th>
-                        <th>Vit. R1</th>
-                        <th>Vit. R2</th>
-                        <th>Divergence Fente</th>
+                        <th>Écart-type ($\sigma$)</th>
+                        <th>Répétabilité</th>
+                        <th>Angle R1</th>
+                        <th>Angle R2</th>
+                        <th>Divergence</th>
+                        <th>Statut</th>
                     </tr>
                 </thead>
                 <tbody id="print-table-body">
-                    <!-- Généré dynamiquement en JS -->
+                    <!-- Injected via JS -->
                 </tbody>
             </table>
         </div>
 
-        <!-- ÉTIQUETTE À DÉCOUPER POUR LE SAC PHOTO -->
+        <div class="print-section" id="print-notes-section" style="display:none;">
+            <h3>Notes & Observations :</h3>
+            <p id="print-notes-text" style="font-size: 9pt; font-style: italic;"></p>
+        </div>
+
+        <!-- ÉTIQUETTE SAC PHOTO -->
         <div class="cutout-ticket">
             <div class="ticket-header">
-                <strong>FICHE RÉGLAGE OBTURATEUR</strong>
-                <span id="ticket-format">Format: --</span>
+                <strong>FICHE RÉGLAGE — ShutterLAB</strong>
+                <span id="ticket-camera">--</span>
             </div>
-            <div class="ticket-grid" id="ticket-grid">
-                <!-- Contenu compact -->
-            </div>
-            <div class="ticket-footer">Calibré le <span id="ticket-date"></span> par A. NOUVIER</div>
+            <div class="ticket-grid" id="ticket-grid"></div>
+            <div class="ticket-footer">Calibré le <span id="ticket-date"></span></div>
         </div>
     </div>
 

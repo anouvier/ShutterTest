@@ -1,5 +1,29 @@
 #include "web_server.h"
 
+static const char* BRANDS_FILE = "/brands.json";
+static const char* MODELS_FILE = "/models.json";
+
+static const char* DEFAULT_BRANDS_JSON =
+  "[\"Leica\",\"Zorki\",\"FED\",\"Kiev\",\"Zenit\",\"Lomo\","
+  "\"Nikon\",\"Canon\",\"Olympus\",\"Pentax\",\"Asahi Pentax\","
+  "\"Contax\",\"Minolta\",\"Yashica\",\"Konica\",\"Ricoh\","
+  "\"Rollei\",\"Hasselblad\",\"Mamiya\",\"Zenza Bronica\","
+  "\"Voigtländer\",\"Zeiss Ikon\",\"Praktica\",\"Exakta\","
+  "\"Agfa\",\"Royer\",\"Sem\",\"Welta\",\"Foca\",\"Kodak\"]";
+
+String readOrInitListFile(const char* path, const char* defaultJson) {
+    if (!LittleFS.exists(path)) {
+        File f = LittleFS.open(path, "w");
+        if (f) { f.print(defaultJson); f.close(); }
+        return String(defaultJson);
+    }
+    File f = LittleFS.open(path, "r");
+    if (!f) return String(defaultJson);
+    String content = f.readString();
+    f.close();
+    return content.length() ? content : String(defaultJson);
+}
+
 WebServerManager::WebServerManager(SensorID &sensorId, CaptureEngine &captureEngine)
     : _server(WEBSERVER_PORT), _ws("/ws"), _sensorId(sensorId), _captureEngine(captureEngine) {}
 
@@ -13,6 +37,7 @@ void WebServerManager::begin() {
     setupWiFi();
     setupWebSocket();
     setupRoutes();
+    setupListRoutes();
 
     _server.begin();
     Serial.println("[HTTP] Serveur Web démarré sur le port 80.");
@@ -77,6 +102,56 @@ void WebServerManager::setupRoutes() {
     _server.onNotFound([](AsyncWebServerRequest *request) {
         request->send(404, "text/plain", "Page non trouvée");
     });
+}
+
+void WebServerManager::setupListRoutes() {
+    // GET /api/lists -> { "brands": [...], "models": [...] }
+    _server.on("/api/lists", HTTP_GET, [](AsyncWebServerRequest* request) {
+        String brandsJson = readOrInitListFile(BRANDS_FILE, DEFAULT_BRANDS_JSON);
+        String modelsJson = readOrInitListFile(MODELS_FILE, "[]");
+        String out = "{\"brands\":" + brandsJson + ",\"models\":" + modelsJson + "}";
+        request->send(200, "application/json", out);
+    });
+
+    // POST /api/lists/brand  body: {"value": "Kiev"}  -> renvoie le tableau à jour
+    auto* brandHandler = new AsyncCallbackJsonWebHandler("/api/lists/brand",
+        [this](AsyncWebServerRequest* request, JsonVariant& json) {
+            this->handleAddListValue(request, json, BRANDS_FILE, DEFAULT_BRANDS_JSON);
+        });
+    _server.addHandler(brandHandler);
+
+    auto* modelHandler = new AsyncCallbackJsonWebHandler("/api/lists/model",
+        [this](AsyncWebServerRequest* request, JsonVariant& json) {
+            this->handleAddListValue(request, json, MODELS_FILE, "[]");
+        });
+    _server.addHandler(modelHandler);
+}
+
+void WebServerManager::handleAddListValue(AsyncWebServerRequest* request, JsonVariant& json,
+                                           const char* path, const char* defaultJson) {
+    const char* value = json["value"] | "";
+    if (strlen(value) == 0) {
+        request->send(400, "application/json", "{\"error\":\"valeur vide\"}");
+        return;
+    }
+
+    DynamicJsonDocument doc(4096);
+    deserializeJson(doc, readOrInitListFile(path, defaultJson));
+    JsonArray arr = doc.as<JsonArray>();
+
+    bool exists = false;
+    for (JsonVariant v : arr) {
+        if (strcasecmp(v.as<const char*>(), value) == 0) { exists = true; break; }
+    }
+    if (!exists) {
+        arr.add(value);
+        File f = LittleFS.open(path, "w");
+        if (f) { serializeJson(doc, f); f.close(); }
+    }
+
+    String out;
+    serializeJson(doc, out);
+    request->send(200, "application/json", out);
 }
 
 void WebServerManager::update() {

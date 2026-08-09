@@ -1,3 +1,7 @@
+#ifndef IRAM_ATTR
+  #define IRAM_ATTR
+#endif
+
 #include "capture_engine.h"
 
 CaptureState CaptureEngine::_state = CAPTURE_IDLE;

@@ -1,3 +1,15 @@
+#ifndef ARDUINO
+  // Fallbacks pour l'environnement Native / Mock
+  #define D2 2
+  #define D3 3
+  #define D4 4
+  #define D5 5
+  #define D6 6
+  #define A0 0
+  #define INPUT 0
+  #define CHANGE 1
+#endif
+
 #ifndef CONFIG_H
 #define CONFIG_H
 

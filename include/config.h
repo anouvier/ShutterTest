@@ -19,12 +19,13 @@
 // 1. MAPPING DES PINS (Arduino Nano ESP32 / ESP32-S3)
 // ============================================================================
 
-#define PIN_SENSOR_ID           A0  // Pin 8 DE-9
-#define PIN_SENSOR_TOP_LEFT     D2  // Pin 3 DE-9
-#define PIN_SENSOR_BOT_LEFT     D3  // Pin 4 DE-9
-#define PIN_SENSOR_CENTER       D4  // Pin 5 DE-9
-#define PIN_SENSOR_TOP_RIGHT    D5  // Pin 6 DE-9
-#define PIN_SENSOR_BOT_RIGHT    D6  // Pin 7 DE-9
+// #define PIN_SENSOR_ID           1   // Broche A0  (GPIO 1)  -> Pin 8 DE-9
+#define PIN_SENSOR_ID           A0
+#define PIN_SENSOR_TOP_LEFT     D2   // Broche D2  (GPIO 5)  -> Pin 3 DE-9
+#define PIN_SENSOR_BOT_LEFT     D3   // Broche D3  (GPIO 6)  -> Pin 4 DE-9
+#define PIN_SENSOR_CENTER       D4   // Broche D4  (GPIO 7)  -> Pin 5 DE-9
+#define PIN_SENSOR_TOP_RIGHT    D5   // Broche D5  (GPIO 8)  -> Pin 6 DE-9
+#define PIN_SENSOR_BOT_RIGHT    D6   // Broche D6  (GPIO 9)  -> Pin 7 DE-9
 
 #define NUM_SENSORS             5
 
@@ -93,8 +94,8 @@ struct ShutterMeasurement {
 
 #define ADC_RESOLUTION          4095.0f
 #define VREF_VOLTAGE            3.3f
-#define ID_PULLUP_RESISTOR_OHM  1000.0f
-#define AUTO_ID_TOLERANCE_PCT   0.15f
+#define ID_PULLUP_RESISTOR_OHM  47000.0f
+#define AUTO_ID_TOLERANCE_PCT   0.40f
 
 struct ModuleIDConfig {
     SensorFormat format;

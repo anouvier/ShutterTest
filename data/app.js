@@ -5,6 +5,14 @@ const seriesData = {};
 window.addEventListener('DOMContentLoaded', () => {
     initWebSocket();
     drawOscilloscopeGrid(20); 
+    loadBrandModelLists();
+
+    document.getElementById('meta-brand').addEventListener('change', (e) => {
+        rememberValue('/api/lists/brand', 'brand-list', e.target.value);
+    });
+    document.getElementById('meta-model').addEventListener('change', (e) => {
+        rememberValue('/api/lists/model', 'model-list', e.target.value);
+    });
 });
 
 function initWebSocket() {
@@ -38,6 +46,42 @@ function initWebSocket() {
             processMeasurement(data);
         }
     };
+}
+
+async function loadBrandModelLists() {
+    try {
+        const res = await fetch('/api/lists');
+        const data = await res.json();
+        fillDatalist('brand-list', data.brands || []);
+        fillDatalist('model-list', data.models || []);
+    } catch (e) {
+        console.error('Impossible de charger les listes marque/modèle', e);
+    }
+}
+
+function fillDatalist(datalistId, items) {
+    const datalist = document.getElementById(datalistId);
+    datalist.innerHTML = '';
+    [...items].sort((a, b) => a.localeCompare(b)).forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v;
+        datalist.appendChild(opt);
+    });
+}
+
+async function rememberValue(endpoint, datalistId, value) {
+    if (!value || !value.trim()) return;
+    try {
+        const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ value: value.trim() })
+        });
+        const data = await res.json();
+        fillDatalist(datalistId, data);
+    } catch (e) {
+        console.error("Impossible d'enregistrer la valeur", e);
+    }
 }
 
 /* ==========================================================================
@@ -423,11 +467,19 @@ function updateSummaryTable() {
 
     const now = new Date().toLocaleDateString('fr-FR');
     const cameraModel = document.getElementById('meta-model')?.value || "Boîtier Inconnu";
+    const cameraBrand = document.getElementById('meta-brand')?.value || "";
+    const cameraType = document.getElementById('meta-type')?.value || "";
     const cameraSerial = document.getElementById('meta-serial')?.value;
     const techName = document.getElementById('meta-tech')?.value || "Technicien";
     const notes = document.getElementById('meta-notes')?.value;
+    const reportType = document.getElementById('report-type')?.value || "initial";
 
-    const fullCamStr = cameraModel + (cameraSerial ? ` (#${cameraSerial})` : "");
+    const fullCamStr = [cameraBrand, cameraModel].filter(Boolean).join(' ')
+        + (cameraType ? ` (${cameraType})` : "")
+        + (cameraSerial ? ` — #${cameraSerial}` : "");
+
+    document.getElementById('print-report-title').innerText =
+        reportType === "calibration" ? "RAPPORT DE CALIBRATION" : "RAPPORT D'ESSAI INITIAL";
 
     document.getElementById('print-date').innerText = now;
     document.getElementById('ticket-date').innerText = now;

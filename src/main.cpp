@@ -26,6 +26,26 @@ void setup() {
     Serial.printf("[Auto-ID] Module au démarrage : %s\n", sensorId.getFormatName(lastFormat));
 }
 
+void sendTeleplotData() {
+    // 1. Lecture directe des 5 capteurs (GPIO 5, 6, 7, 8, 9)
+    int tl = digitalRead(PIN_SENSOR_TOP_LEFT)  + 8;
+    int bl = digitalRead(PIN_SENSOR_BOT_LEFT)  + 6;
+    int ct = digitalRead(PIN_SENSOR_CENTER)    + 4;
+    int tr = digitalRead(PIN_SENSOR_TOP_RIGHT) + 2;
+    int br = digitalRead(PIN_SENSOR_BOT_RIGHT) + 0;
+
+    // 2. Transmettre les signaux sous le format Teleplot (>nom:valeur\n)
+    Serial.printf(">TopLeft:%d\n", tl);
+    Serial.printf(">BotLeft:%d\n", bl);
+    Serial.printf(">Center:%d\n", ct);
+    Serial.printf(">TopRight:%d\n", tr);
+    Serial.printf(">BotRight:%d\n", br);
+
+    // 3. Tension et Résistance calculée de l'ID (depuis ta classe SensorID)
+    Serial.printf(">Sensor_ID_mV:%d\n", analogReadMilliVolts(PIN_SENSOR_ID));
+    Serial.printf(">Resistor_Ohm:%.1f\n", sensorId.getLastMeasuredResistor());
+}
+
 void loop() {
     webServer.update();
 
@@ -59,5 +79,12 @@ void loop() {
 
         // Réarmement automatique du moteur d'acquisition pour le prochain tir
         captureEngine.rearmSameTarget();
+    }
+
+    // 3. Télémétrie continue pour Teleplot
+    static uint32_t lastTeleplotTime = 0;
+    if (millis() - lastTeleplotTime >= 15) { // ~60 Hz de rafraîchissement
+        sendTeleplotData();
+        lastTeleplotTime = millis();
     }
 }

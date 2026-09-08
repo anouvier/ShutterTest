@@ -5,6 +5,7 @@
 #include <ESPAsyncWebServer.h>
 #include <LittleFS.h>
 #include <ArduinoJson.h>
+#include <AsyncJson.h>
 
 #include "config.h"
 #include "sensor_id.h"
@@ -35,6 +36,10 @@ private:
     // Génération des payloads JSON
     String serializeMeasurementJSON(const ShutterMeasurement &meas);
     String serializeStatusJSON(SensorFormat currentFormat, CaptureState state);
+    
+    void setupListRoutes();
+    void handleAddListValue(AsyncWebServerRequest* request, JsonVariant& json,
+                             const char* path, const char* defaultJson);
 };
 
 #endif // WEB_SERVER_H

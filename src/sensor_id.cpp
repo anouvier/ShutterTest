@@ -3,16 +3,19 @@
 SensorID::SensorID() : _lastResistorOhm(0.0f) {}
 
 void SensorID::begin() {
-    // Sur Nano ESP32 / ESP32-S3, résolution de l'ADC configurée en 12 bits
+    // 1. Résolution ADC standard sur 12 bits (0 - 4095)
     analogReadResolution(12);
+    analogSetPinAttenuation(PIN_SENSOR_ID, ADC_11db);
+    
+    // 2. Entrée analogique classique (le Pull-Up externe gère la tension)
     pinMode(PIN_SENSOR_ID, INPUT);
 }
 
 float SensorID::readAveragedADC(uint8_t samples) {
     uint32_t sum = 0;
     for (uint8_t i = 0; i < samples; i++) {
-        sum += analogRead(PIN_SENSOR_ID);
-        delayMicroseconds(100); // Petit délai pour stabiliser la lecture
+        sum += analogReadMilliVolts(PIN_SENSOR_ID);
+        delayMicroseconds(200);
     }
     return (float)sum / (float)samples;
 }
@@ -22,18 +25,27 @@ float SensorID::getLastMeasuredResistor() {
 }
 
 SensorFormat SensorID::readFormat() {
-    float rawADC = readAveragedADC(32); // Moyenne sur 32 échantillons pour filtrer le bruit
+    float measuredmV = readAveragedADC(32);
+    float vccMilliVolts = 3300.0f;
 
-    // Évite la division par zéro si la ligne est en court-circuit strict au 3.3V
-    if (rawADC >= (ADC_RESOLUTION - 5.0f)) {
-        _lastResistorOhm = 999999.0f; // Circuit ouvert / Non connecté
+    // 1. Module non connecté (A0 est tirée au 3.3V par la résistance externe)
+    if (measuredmV >= 3150.0f) {
+        _lastResistorOhm = 999999.0f;
         return FORMAT_UNKNOWN;
     }
 
-    // Calcul de R_module via la formule du pont diviseur
-    _lastResistorOhm = ID_PULLUP_RESISTOR_OHM * (rawADC / (ADC_RESOLUTION - rawADC));
+    // 2. Sécurité : court-circuit direct au GND (< 10 mV)
+    if (measuredmV <= 10.0f) {
+        _lastResistorOhm = 0.0f;
+        return FORMAT_UNKNOWN;
+    }
 
-    // Comparaison avec la table des formats
+    // 3. Calcul de la résistance du module (Pont diviseur avec Pull-Up externe de 10k/47k)
+    // V_out = VCC * R_module / (R_pullup + R_module)
+    // R_module = (R_pullup * V_out) / (VCC - V_out)
+    _lastResistorOhm = (ID_PULLUP_RESISTOR_OHM * measuredmV) / (vccMilliVolts - measuredmV);
+
+    // 4. Identification du format
     for (uint8_t i = 0; i < NUM_MODULE_CONFIGS; i++) {
         float target = MODULE_CONFIGS[i].targetResistorOhm;
         float minAllowed = target * (1.0f - AUTO_ID_TOLERANCE_PCT);

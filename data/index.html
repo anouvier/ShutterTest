@@ -7,130 +7,143 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container" id="main-ui">
-        <header>
-            <div class="logo">
-                <h1>Shutter<span>LAB</span></h1>
-                <span id="format-badge" class="badge format">DÉTECTION...</span>
-            </div>
-            <div class="status-bar">
-                <span id="status-badge" class="badge status">DECONNECTÉ</span>
-                <button id="btn-arm" onclick="armEngine()">RÉARMER</button>
-                <button id="btn-sim" class="secondary" onclick="triggerSimulation()">⚡ TEST SIMU</button>
-            </div>
-        </header>
-
-        <!-- CARTE CONTROLES & SELECTION VITESSE CIBLE -->
-        <div class="card">
-            <div class="controls">
-                <div class="control-group">
-                    <label for="targetSpeed">Vitesse Cible (Consigne) :</label>
-                    <select id="targetSpeed" onchange="onTargetSpeedChange()">
-                        <option value="1">1 s (1000 ms)</option>
-                        <option value="2">1/2 s (500 ms)</option>
-                        <option value="4">1/4 s (250 ms)</option>
-                        <option value="8">1/8 s (125 ms)</option>
-                        <option value="15">1/15 s (66.7 ms)</option>
-                        <option value="30">1/30 s (33.3 ms)</option>
-                        <option value="60">1/60 s (16.7 ms)</option>
-                        <option value="125" selected>1/125 s (8.0 ms)</option>
-                        <option value="250">1/250 s (4.0 ms)</option>
-                        <option value="500">1/500 s (2.0 ms)</option>
-                        <option value="1000">1/1000 s (1.0 ms)</option>
-                        <option value="2000">1/2000 s (0.5 ms)</option>
-                    </select>
-                </div>
-
-                <div class="control-group">
-                    <label>Obturateur Détecté :</label>
-                    <span id="shutter-type-tag" class="type-badge">--</span>
-                </div>
-            </div>
-
-            <!-- ZONE OSCILLOSCOPE MULTI-CAPTEURS (CANVAS) -->
-            <div class="canvas-container">
-                <canvas id="oscilloscope" width="800" height="200"></canvas>
-                <div id="freezeBadge" class="freeze-badge">SIGNAL CAPTURÉ</div>
-            </div>
-
-            <!-- AFFICHAGE DU DERNIER TIR -->
-            <div class="live-display">
-                <div class="live-time-wrapper">
-                    <span class="label-muted">Mesure au Centre :</span>
-                    <div id="lastMeasurement" class="live-time">-- ms</div>
-                    <div id="lastSpeed" class="live-speed">(1/-- s)</div>
-                </div>
-                <div class="live-ev-wrapper">
-                    <span class="label-muted">Écart Consigne :</span>
-                    <div id="lastEV" class="live-ev">-- EV</div>
-                </div>
-            </div>
+<div class="container" id="main-ui">
+    <header>
+        <div class="logo">
+            <h1>Shutter<span>LAB</span></h1>
+            <span id="format-badge" class="badge format">DÉTECTION...</span>
         </div>
-
-        <!-- FICHE D'INTERVENTION BOÎTIER (FORMULAIRE INTÉGRÉ) -->
-        <div class="card">
-            <div class="card-header">
-                <h2>Fiche d'intervention Boîtier</h2>
-            </div>
-            <div class="form-grid">
-                <div class="control-group">
-                    <label for="meta-model">Marque & Modèle</label>
-                    <input type="text" id="meta-model" placeholder="ex: Nikon F3, Olympus OM-1..." onchange="updateSummaryTable()">
-                </div>
-                <div class="control-group">
-                    <label for="meta-serial">N° de Série</label>
-                    <input type="text" id="meta-serial" placeholder="ex: 723411" onchange="updateSummaryTable()">
-                </div>
-                <div class="control-group">
-                    <label for="meta-tech">Technicien / Opérateur</label>
-                    <input type="text" id="meta-tech" placeholder="ex: Alexandre" onchange="updateSummaryTable()">
-                </div>
-                <div class="control-group">
-                    <label for="meta-tolerance">Tolérance Cible</label>
-                    <select id="meta-tolerance" onchange="updateSummaryTable()">
-                        <option value="0.33">± 1/3 EV (Strict)</option>
-                        <option value="0.50" selected>± 1/2 EV (Standard)</option>
-                        <option value="0.66">± 2/3 EV (Tolérant)</option>
-                    </select>
-                </div>
-                <div class="control-group full-width">
-                    <label for="meta-notes">Observations / Notes d'atelier</label>
-                    <input type="text" id="meta-notes" placeholder="ex: Graisses d'armement d'origine, vitesses lentes OK." onchange="updateSummaryTable()">
-                </div>
-            </div>
+        <div class="status-bar">
+            <span id="status-badge" class="badge status">DECONNECTÉ</span>
+            <button id="btn-arm" onclick="armEngine()">RÉARMER</button>
+            <button id="btn-sim" class="secondary" onclick="triggerSimulation()">⚡ TEST SIMU</button>
         </div>
+    </header>
 
-        <!-- CARTE HISTORIQUE, MOYENNES & DISPERSION (3 MESURES) -->
-        <div class="card">
-            <div class="card-header">
-                <h2>Synthèse des Séries (3 Mesures / Vitesse)</h2>
-                <div class="btn-group">
-                    <button onclick="clearHistory()" class="secondary">Réinitialiser</button>
-                    <button onclick="printReport()" class="primary">📄 Exporter le Rapport PDF</button>
-                </div>
+    <!-- FICHE D'INTERVENTION BOÎTIER — EN PREMIER -->
+    <div class="card">
+        <div class="card-header">
+            <h2>Fiche d'intervention Boîtier</h2>
+        </div>
+        <div class="form-grid">
+            <div class="control-group">
+                <label for="report-type">Type de rapport</label>
+                <select id="report-type">
+                    <option value="initial">Rapport d'essai initial</option>
+                    <option value="calibration">Rapport de calibration</option>
+                </select>
             </div>
-
-            <table id="resultsTable">
-                <thead>
-                    <tr>
-                        <th>Cible</th>
-                        <th>Tir 1</th>
-                        <th>Tir 2</th>
-                        <th>Tir 3</th>
-                        <th>Moyenne</th>
-                        <th>Écart EV</th>
-                        <th>Dispersion</th>
-                        <th>Skew R1</th>
-                        <th>Skew R2</th>
-                        <th>Diverg.</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Lignes générées en JS -->
-                </tbody>
-            </table>
+            <div class="control-group">
+                <label for="meta-type">Type d'appareil</label>
+                <select id="meta-type">
+                    <option value="">--</option>
+                    <option value="Télémétrique">Télémétrique</option>
+                    <option value="Reflex">Reflex (SLR)</option>
+                    <option value="Bi-objectif (TLR)">Bi-objectif (TLR)</option>
+                    <option value="Chambre à soufflet">Chambre à soufflet</option>
+                    <option value="Boîte">Boîte</option>
+                    <option value="Compact">Compact (obturateur central)</option>
+                    <option value="Autre">Autre</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="meta-brand">Marque</label>
+                <input type="text" id="meta-brand" list="brand-list" placeholder="ex: Zorki, Leica..." onchange="updateSummaryTable()">
+                <datalist id="brand-list"></datalist>
+            </div>
+            <div class="control-group">
+                <label for="meta-model">Modèle</label>
+                <input type="text" id="meta-model" list="model-list" placeholder="ex: 4, IIIc, F3..." onchange="updateSummaryTable()">
+                <datalist id="model-list"></datalist>
+            </div>
+            <div class="control-group">
+                <label for="meta-serial">N° de Série</label>
+                <input type="text" id="meta-serial" placeholder="ex: 723411" onchange="updateSummaryTable()">
+            </div>
+            <div class="control-group">
+                <label for="meta-tech">Technicien / Opérateur</label>
+                <input type="text" id="meta-tech" placeholder="ex: Alexandre" onchange="updateSummaryTable()">
+            </div>
+            <div class="control-group">
+                <label for="meta-tolerance">Tolérance Cible</label>
+                <select id="meta-tolerance" onchange="updateSummaryTable()">
+                    <option value="0.33">± 1/3 EV (Strict)</option>
+                    <option value="0.50" selected>± 1/2 EV (Standard)</option>
+                    <option value="0.66">± 2/3 EV (Tolérant)</option>
+                </select>
+            </div>
+            <div class="control-group full-width">
+                <label for="meta-notes">Observations / Notes d'atelier</label>
+                <textarea id="meta-notes" rows="3" placeholder="ex: Graisses d'armement d'origine, vitesses lentes OK." onchange="updateSummaryTable()"></textarea>
+            </div>
         </div>
     </div>
+
+    <!-- CARTE CONTROLES & SELECTION VITESSE CIBLE -->
+    <div class="card">
+        <div class="controls">
+            <div class="control-group">
+                <label for="targetSpeed">Vitesse Cible (Consigne) :</label>
+                <select id="targetSpeed" onchange="onTargetSpeedChange()">
+                    <option value="1">1 s (1000 ms)</option>
+                    <option value="2">1/2 s (500 ms)</option>
+                    <option value="4">1/4 s (250 ms)</option>
+                    <option value="8">1/8 s (125 ms)</option>
+                    <option value="15">1/15 s (66.7 ms)</option>
+                    <option value="30">1/30 s (33.3 ms)</option>
+                    <option value="60">1/60 s (16.7 ms)</option>
+                    <option value="125" selected>1/125 s (8.0 ms)</option>
+                    <option value="250">1/250 s (4.0 ms)</option>
+                    <option value="500">1/500 s (2.0 ms)</option>
+                    <option value="1000">1/1000 s (1.0 ms)</option>
+                    <option value="2000">1/2000 s (0.5 ms)</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Obturateur Détecté :</label>
+                <span id="shutter-type-tag" class="type-badge">--</span>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="oscilloscope" width="800" height="200"></canvas>
+            <div id="freezeBadge" class="freeze-badge">SIGNAL CAPTURÉ</div>
+        </div>
+
+        <div class="live-display">
+            <div class="live-time-wrapper">
+                <span class="label-muted">Mesure au Centre :</span>
+                <div id="lastMeasurement" class="live-time">-- ms</div>
+                <div id="lastSpeed" class="live-speed">(1/-- s)</div>
+            </div>
+            <div class="live-ev-wrapper">
+                <span class="label-muted">Écart Consigne :</span>
+                <div id="lastEV" class="live-ev">-- EV</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARTE HISTORIQUE, MOYENNES & DISPERSION -->
+    <div class="card">
+        <div class="card-header">
+            <h2>Synthèse des Séries (3 Mesures / Vitesse)</h2>
+            <div class="btn-group">
+                <button onclick="clearHistory()" class="secondary">Réinitialiser</button>
+                <button onclick="printReport()" class="primary">📄 Exporter le Rapport PDF</button>
+            </div>
+        </div>
+        <table id="resultsTable">
+            <thead>
+                <tr>
+                    <th>Cible</th><th>Tir 1</th><th>Tir 2</th><th>Tir 3</th>
+                    <th>Moyenne</th><th>Écart EV</th><th>Dispersion</th>
+                    <th>Skew R1</th><th>Skew R2</th><th>Diverg.</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
 
     <!-- CANVAS SCHÉMA GÉOMÉTRIQUE (Caché sur l'IHM web, affiché dans le rapport) -->
     <canvas id="geometryCanvas" width="400" height="250" style="display:none;"></canvas>
@@ -139,7 +152,7 @@
     <div id="printable-area">
         <div class="print-header">
             <div class="print-header-main">
-                <h1>RAPPORT DE CALIBRATION</h1>
+                <h1 id="print-report-title">RAPPORT DE CALIBRATION</h1>
                 <p>ShutterLAB - Analyse Optronique Multi-Capteurs</p>
             </div>
             <div class="print-header-meta">
